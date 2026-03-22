@@ -1,0 +1,5 @@
+{
+  "name": "Student Pickup Assistant",
+  "description": "A real-time coordination app for student pickups, featuring timetable management and location-based notifications for drivers.",
+  "requestFramePermissions": ["geolocation"]
+}

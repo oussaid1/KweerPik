@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'driver' ||
+         (request.auth.token.email == "abdellatif.oussaid@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'role']) &&
+             data.uid is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string &&
+             data.role in ['driver', 'student'] &&
+             (!('driverId' in data) || data.driverId is string);
+    }
+
+    function isValidTimetable(data) {
+      return data.keys().hasAll(['userId', 'schedule']) &&
+             data.userId is string &&
+             data.schedule is list;
+    }
+
+    function isValidPickupRequest(data) {
+      return data.keys().hasAll(['studentId', 'studentName', 'driverId', 'location', 'status', 'timestamp']) &&
+             data.studentId is string &&
+             data.studentName is string &&
+             data.driverId is string &&
+             data.location is map &&
+             data.status in ['pending', 'accepted', 'completed', 'cancelled'] &&
+             data.timestamp is string;
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+    }
+
+    match /timetables/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && isValidTimetable(request.resource.data);
+    }
+
+    match /pickup_requests/{requestId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.studentId || 
+        request.auth.uid == resource.data.driverId ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && isValidPickupRequest(request.resource.data) && 
+                      request.resource.data.studentId == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == resource.data.studentId && request.resource.data.status == 'cancelled') ||
+        (request.auth.uid == resource.data.driverId && request.resource.data.status in ['accepted', 'completed'])
+      );
+      allow delete: if isAdmin();
+    }
+  }
+}

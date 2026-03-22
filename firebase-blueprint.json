@@ -1,0 +1,72 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile for students and drivers",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["driver", "student"] },
+        "photoURL": { "type": "string" }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "Timetable": {
+      "title": "Timetable",
+      "description": "Student's weekly school schedule",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "schedule": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "day": { "type": "string" },
+              "startTime": { "type": "string" },
+              "endTime": { "type": "string" }
+            }
+          }
+        }
+      },
+      "required": ["userId", "schedule"]
+    },
+    "PickupRequest": {
+      "title": "Pickup Request",
+      "description": "A real-time notification from a student for pickup",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "extraTime": { "type": "number", "description": "Additional time in minutes" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "latitude": { "type": "number" },
+            "longitude": { "type": "number" },
+            "address": { "type": "string" }
+          }
+        },
+        "status": { "type": "string", "enum": ["pending", "accepted", "completed", "cancelled"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentId", "studentName", "location", "status", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/timetables/{userId}": {
+      "schema": "Timetable",
+      "description": "Student schedules"
+    },
+    "/pickup_requests/{requestId}": {
+      "schema": "PickupRequest",
+      "description": "Real-time pickup notifications"
+    }
+  }
+}
